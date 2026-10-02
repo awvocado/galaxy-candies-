@@ -7,4 +7,4 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes)
   ]
-};
+}
