@@ -1,4 +1,4 @@
-import { Component, signal, ViewEncapsulation, ChangeDetectionStrategy } from '@angular/core';
+import { Component, signal, computed, ViewEncapsulation, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -23,6 +23,12 @@ import { CommonModule } from '@angular/common';
         border: 1px solid rgba(255, 255, 255, 0.12);
       }
       .candy-shadow { filter: drop-shadow(0 18px 16px rgba(0,0,0,.4)); }
+
+      /* Custom Scrollbar for Product Grid */
+      .custom-scroll::-webkit-scrollbar { width: 6px; }
+      .custom-scroll::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); border-radius: 8px; }
+      .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 8px; }
+      .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(234, 194, 36, 0.5); }
 
       @keyframes bob-a { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-14px) rotate(3deg); } }
       @keyframes bob-b { 0%,100% { transform: translateY(0) rotate(6deg); } 50% { transform: translateY(-10px) rotate(-4deg); } }
@@ -69,6 +75,7 @@ import { CommonModule } from '@angular/common';
               <button (click)="subTab.set('s-pos')" [ngClass]="subTab() === 's-pos' ? activeCls : idleCls" class="px-5 py-2.5 rounded-full text-sm font-semibold transition-all">POS Terminal</button>
               <button (click)="subTab.set('s-payment')" [ngClass]="subTab() === 's-payment' ? activeCls : idleCls" class="px-5 py-2.5 rounded-full text-sm font-semibold transition-all">Payment Validation</button>
               <button (click)="subTab.set('s-inv')" [ngClass]="subTab() === 's-inv' ? activeCls : idleCls" class="px-5 py-2.5 rounded-full text-sm font-semibold transition-all">Invoice Generation</button>
+              <button (click)="subTab.set('s-rep')" [ngClass]="subTab() === 's-rep' ? activeCls : idleCls" class="px-5 py-2.5 rounded-full text-sm font-semibold transition-all">Reports</button>
             </div>
 
             <div class="relative w-full md:w-72">
@@ -167,22 +174,28 @@ import { CommonModule } from '@angular/common';
                     </div>
                   </div>
 
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 font-sans">
-                    @for (p of products; track p.sku) {
-                      <div [class]="'glass-panel p-5 rounded-3xl flex flex-col justify-between relative transition-all ' + (p.out ? 'opacity-60' : 'hover:border-[#EAC224]/60 hover:-translate-y-0.5 cursor-pointer')">
-                        <span [class]="'absolute top-4 right-4 px-2.5 py-1 rounded-full text-[10px] font-bold border ' + (p.out ? chipRed : chipLime)">{{ p.stock }}</span>
-                        <div>
-                          <div class="h-20 flex items-center justify-center text-white/30 mb-2"><svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg></div>
-                          <p class="font-semibold text-sm font-candy">{{ p.name }}</p>
-                          <p class="text-[11px] text-white/45 font-mono mb-2 font-bold">SKU: {{ p.sku }}</p>
+                  <!-- Scrollable Product Grid Container -->
+                  <div class="max-h-[620px] overflow-y-auto pr-3 custom-scroll">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 font-sans">
+                      @for (p of products; track p.sku) {
+                        <div [class]="'glass-panel p-5 rounded-3xl flex flex-col justify-between relative transition-all ' + (p.out ? 'opacity-60' : 'hover:border-[#EAC224]/60 hover:-translate-y-0.5 cursor-pointer')">
+                          <span [class]="'absolute top-4 right-4 px-2.5 py-1 rounded-full text-[10px] font-bold border ' + (p.out ? chipRed : chipLime)">{{ p.stock }}</span>
+                          <div>
+                            <div class="h-24 w-full flex items-center justify-center mb-3 rounded-xl overflow-hidden bg-black/20 border border-white/5 relative">
+                              <span class="absolute text-[10px] text-white/30 font-mono text-center px-2 z-0">Missing Image</span>
+                              <img [src]="p.image" [alt]="p.name" class="w-full h-full object-cover relative z-10 bg-transparent">
+                            </div>
+                            <p class="font-semibold text-sm font-candy">{{ p.name }}</p>
+                            <p class="text-[11px] text-white/45 font-mono mb-2 font-bold">SKU: {{ p.sku }}</p>
+                          </div>
+                          <div class="flex justify-between items-center pt-3 border-t border-white/10">
+                            <span class="font-extrabold text-base">{{ p.price }}</span>
+                            <button [disabled]="p.out" [attr.aria-label]="'Add ' + p.name"
+                              [class]="p.out ? 'w-8 h-8 bg-white/10 text-white/30 rounded-full flex items-center justify-center font-bold text-lg cursor-not-allowed' : 'w-8 h-8 bg-[#EAC224] hover:bg-[#f5d34a] text-[#2d3e15] rounded-full flex items-center justify-center font-bold text-lg transition-colors'">+</button>
+                          </div>
                         </div>
-                        <div class="flex justify-between items-center pt-3 border-t border-white/10">
-                          <span class="font-extrabold text-base">{{ p.price }}</span>
-                          <button [disabled]="p.out" [attr.aria-label]="'Add ' + p.name"
-                            [class]="p.out ? 'w-8 h-8 bg-white/10 text-white/30 rounded-full flex items-center justify-center font-bold text-lg cursor-not-allowed' : 'w-8 h-8 bg-[#EAC224] hover:bg-[#f5d34a] text-[#2d3e15] rounded-full flex items-center justify-center font-bold text-lg transition-colors'">+</button>
-                        </div>
-                      </div>
-                    }
+                      }
+                    </div>
                   </div>
                 </div>
 
@@ -196,16 +209,16 @@ import { CommonModule } from '@angular/common';
 
                     <div class="bg-black/20 p-4 rounded-2xl border border-white/10 mb-6">
                       <div class="flex justify-between items-start mb-3">
-                        <p class="font-semibold text-sm font-candy">Mango Candy (Single Pack)</p>
-                        <span class="font-extrabold text-sm whitespace-nowrap ml-2">₱ 2,500.00</span>
+                        <p class="font-semibold text-sm font-candy">Jumbo White</p>
+                        <span class="font-extrabold text-sm whitespace-nowrap ml-2">₱ 800.00</span>
                       </div>
                       <div class="flex items-center justify-between">
-                        <p class="text-[11px] text-white/45 font-semibold">₱ 50.00 / ea</p>
+                        <p class="text-[11px] text-white/45 font-semibold">₱ 40.00 / ea</p>
                         <div class="flex items-center gap-3">
                           <button aria-label="Decrease quantity" class="bg-white/10 w-7 h-7 rounded-full hover:bg-white/20 transition-colors flex items-center justify-center text-white">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 12H4"></path></svg>
                           </button>
-                          <span class="font-extrabold text-sm text-center">50</span>
+                          <span class="font-extrabold text-sm text-center">20</span>
                           <button aria-label="Increase quantity" class="bg-white/10 w-7 h-7 rounded-full hover:bg-white/20 transition-colors flex items-center justify-center text-white">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
                           </button>
@@ -214,12 +227,12 @@ import { CommonModule } from '@angular/common';
                     </div>
 
                     <div class="space-y-2 text-xs text-white/65 font-semibold pt-2 border-t border-white/10">
-                      <div class="flex justify-between"><span>Subtotal</span><span>₱ 2,500.00</span></div>
+                      <div class="flex justify-between"><span>Subtotal</span><span>₱ 800.00</span></div>
                       <div class="flex justify-between"><span>Discount</span><span>₱ 0.00</span></div>
-                      <div class="flex justify-between"><span>Tax (VAT 12%)</span><span>₱ 300.00</span></div>
+                      <div class="flex justify-between"><span>Tax (VAT 12%)</span><span>₱ 96.00</span></div>
                       <div class="flex justify-between text-base font-extrabold text-white pt-2 border-t border-white/15">
                         <span>Total</span>
-                        <span class="text-[#EAC224]">₱ 2,800.00</span>
+                        <span class="text-[#EAC224]">₱ 896.00</span>
                       </div>
                     </div>
                   </div>
@@ -416,6 +429,96 @@ import { CommonModule } from '@angular/common';
               </div>
             }
 
+            <!-- 5. REPORTS MODULE -->
+            @if (subTab() === 's-rep') {
+              <div class="space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <h3 class="font-candy text-2xl font-semibold">Sales Analytics &amp; Reports</h3>
+
+                  <!-- Timeframe Toggles -->
+                  <div class="bg-black/20 p-1.5 rounded-full flex gap-1 border border-white/10 overflow-x-auto max-w-full">
+                    @for (period of reportPeriods; track period) {
+                      <button (click)="reportPeriod.set(period)"
+                        [class]="reportPeriod() === period ? 'bg-[#EAC224] text-[#2d3e15] px-4 py-1.5 rounded-full text-xs font-bold shadow-sm transition-all' : 'text-white/70 hover:text-white hover:bg-white/10 px-4 py-1.5 rounded-full text-xs font-bold transition-all'">
+                        {{ period }}
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 font-sans">
+                  <div class="glass-panel p-5 rounded-3xl border-t-2 border-t-[#9be15d]">
+                    <p class="text-white/50 text-[11px] font-bold uppercase tracking-wider mb-1">Gross Revenue</p>
+                    <p class="text-2xl font-extrabold text-white">₱ {{ currentReportData().revenue }}</p>
+                    <p class="text-[10px] text-[#9be15d] font-bold mt-2">↑ {{ currentReportData().revGrowth }} vs last period</p>
+                  </div>
+                  <div class="glass-panel p-5 rounded-3xl border-t-2 border-t-[#EAC224]">
+                    <p class="text-white/50 text-[11px] font-bold uppercase tracking-wider mb-1">Total Orders</p>
+                    <p class="text-2xl font-extrabold text-white">{{ currentReportData().orders }}</p>
+                    <p class="text-[10px] text-[#EAC224] font-bold mt-2">↑ {{ currentReportData().orderGrowth }} vs last period</p>
+                  </div>
+                  <div class="glass-panel p-5 rounded-3xl border-t-2 border-t-[#22d3ee]">
+                    <p class="text-white/50 text-[11px] font-bold uppercase tracking-wider mb-1">Avg Order Value</p>
+                    <p class="text-2xl font-extrabold text-white">₱ {{ currentReportData().aov }}</p>
+                    <p class="text-[10px] text-white/50 font-bold mt-2">- Stable</p>
+                  </div>
+                  <div class="glass-panel p-5 rounded-3xl border-t-2 border-t-[#ffb4b7]">
+                    <p class="text-white/50 text-[11px] font-bold uppercase tracking-wider mb-1">Top Selling</p>
+                    <p class="text-lg font-extrabold text-white leading-tight mt-1">{{ currentReportData().topProduct }}</p>
+                    <p class="text-[10px] text-white/50 font-bold mt-2">By volume</p>
+                  </div>
+                </div>
+
+                <!-- Chart & Table Area -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div class="lg:col-span-2 glass-panel p-6 rounded-3xl h-72 flex flex-col justify-between">
+                    <div class="flex justify-between items-center mb-4">
+                      <h4 class="font-candy text-base font-semibold">Revenue Trend</h4>
+                      <span class="text-[10px] font-bold px-2 py-1 bg-white/10 rounded-md text-white/60">Filtered by: {{ reportPeriod() }}</span>
+                    </div>
+                    <!-- Mock Bar Chart -->
+                    <div class="flex-1 flex items-end justify-between gap-2 md:gap-4 pt-4 border-b border-white/10 pb-2">
+                       @for (bar of currentReportData().chart; track $index) {
+                         <div class="w-full bg-[#EAC224]/20 hover:bg-[#EAC224]/40 transition-all rounded-t-sm relative group" [style.height.%]="bar">
+                           <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-black/80 text-white text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Volume</div>
+                         </div>
+                       }
+                    </div>
+                    <div class="flex justify-between text-[9px] text-white/40 font-mono mt-2 uppercase">
+                      <span>Start</span>
+                      <span>Mid</span>
+                      <span>End</span>
+                    </div>
+                  </div>
+
+                  <div class="glass-panel p-6 rounded-3xl flex flex-col">
+                    <h4 class="font-candy text-base font-semibold mb-4">Category Breakdown</h4>
+                    <div class="space-y-4 flex-1">
+                      <div>
+                        <div class="flex justify-between text-xs font-bold mb-1"><span>Bulk Candies</span><span class="text-[#EAC224]">65%</span></div>
+                        <div class="w-full bg-white/10 rounded-full h-1.5"><div class="bg-[#EAC224] h-1.5 rounded-full" style="width: 65%"></div></div>
+                      </div>
+                      <div>
+                        <div class="flex justify-between text-xs font-bold mb-1"><span>Assorted Packs</span><span class="text-[#9be15d]">25%</span></div>
+                        <div class="w-full bg-white/10 rounded-full h-1.5"><div class="bg-[#9be15d] h-1.5 rounded-full" style="width: 25%"></div></div>
+                      </div>
+                      <div>
+                        <div class="flex justify-between text-xs font-bold mb-1"><span>Singles</span><span class="text-[#22d3ee]">10%</span></div>
+                        <div class="w-full bg-white/10 rounded-full h-1.5"><div class="bg-[#22d3ee] h-1.5 rounded-full" style="width: 10%"></div></div>
+                      </div>
+                    </div>
+                    
+                    <!-- Updated Export Buttons Group -->
+                    <div class="flex gap-3 mt-4">
+                      <button [class]="'flex-1 py-2.5 ' + btnGhost">📄 Export PDF</button>
+                      <button [class]="'flex-1 py-2.5 ' + btnGhost">📊 Export CSV</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
           </div>
         </div>
 
@@ -491,10 +594,9 @@ import { CommonModule } from '@angular/common';
   `
 })
 export class SalesComponent {
-  subTab = signal<string>('s-active');
+  subTab = signal<string>('s-rep'); // Defaulting to the new Reports tab for preview
   sellableStock = signal<number>(150);
 
-  // Tab, button and chip styles (defined before the arrays that use them)
   activeCls = 'bg-[#EAC224] text-[#2d3e15] shadow-[0_8px_20px_-8px_rgba(234,194,36,0.7)]';
   idleCls = 'text-white/70 hover:bg-white/10 hover:text-white';
   btnGold = 'px-4 py-2 bg-[#EAC224] hover:bg-[#f5d34a] text-[#2d3e15] rounded-full text-xs font-bold transition-colors';
@@ -505,6 +607,21 @@ export class SalesComponent {
   chipCyan = 'bg-[#22d3ee]/15 text-[#7fe7f7] border-[#22d3ee]/35';
   chipRed = 'bg-[#B4161B]/25 text-[#ffb4b7] border-[#B4161B]/50';
   chipNeutral = 'bg-white/10 text-white/80 border-white/20';
+
+  // --- REPORTING MODULE STATE & DATA ---
+  reportPeriod = signal<string>('Monthly');
+  reportPeriods = ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Annual'];
+
+  reportData: Record<string, any> = {
+    'Daily': { revenue: '8,450.00', revGrowth: '3%', orders: 12, orderGrowth: '1%', aov: '704.16', topProduct: 'Mango Candy', chart: [30, 45, 20, 60, 40, 80, 50, 90] },
+    'Weekly': { revenue: '54,200.00', revGrowth: '8%', orders: 86, orderGrowth: '4%', aov: '630.23', topProduct: 'Jumbo White', chart: [40, 70, 45, 90, 60, 85, 100] },
+    'Monthly': { revenue: '214,500.00', revGrowth: '12%', orders: 342, orderGrowth: '5%', aov: '627.19', topProduct: 'Galaxy Assorted (12)', chart: [50, 65, 80, 45, 90, 75, 100, 85] },
+    'Quarterly': { revenue: '645,800.00', revGrowth: '15%', orders: 1024, orderGrowth: '9%', aov: '630.66', topProduct: 'Ube TUBbies', chart: [60, 80, 100] },
+    'Annual': { revenue: '2,450,000.00', revGrowth: '24%', orders: 3890, orderGrowth: '18%', aov: '629.82', topProduct: 'Jumbo Roll', chart: [40, 50, 45, 60, 75, 80, 65, 90, 100, 85, 95, 110] }
+  };
+
+  currentReportData = computed(() => this.reportData[this.reportPeriod()]);
+  // -------------------------------------
 
   orders = [
     { id: 'ORD-2026-104', cust: 'Sweet Shop Metro', addr: '123 Retail Ave, City', qty: '50 packs', total: '₱ 2,500.00' },
@@ -517,30 +634,35 @@ export class SalesComponent {
   ];
 
   products = [
-    // Existing Items
-    { name: 'Mango Candy (Single Pack)', sku: 'FG-MAN-001', price: '₱ 50.00', stock: '150 In Stock', out: false },
-    { name: 'Mango Candy (Box of 10)', sku: 'FG-MAN-010', price: '₱ 480.00', stock: '12 In Stock', out: false },
-    { name: 'Tamarind Candy (Pack)', sku: 'FG-TAM-001', price: '₱ 55.00', stock: 'Out of Stock', out: true },
-    
-    // Items added from promotional material
-    { name: 'Mega Ube', sku: 'FG-MUB-001', price: '₱ 45.00', stock: '100 In Stock', out: false },
-    { name: 'Cookies Pack', sku: 'FG-CPA-001', price: '₱ 50.00', stock: '120 In Stock', out: false },
-    { name: 'Chocolate Chip Cookies', sku: 'FG-CCC-001', price: '₱ 65.00', stock: '80 In Stock', out: false },
-    { name: 'Jumbo Roll', sku: 'FG-JRO-001', price: '₱ 40.00', stock: '200 In Stock', out: false },
-    { name: 'Jumbo White', sku: 'FG-JWH-001', price: '₱ 40.00', stock: '200 In Stock', out: false },
-    { name: 'Pastillas Bar', sku: 'FG-PBA-001', price: '₱ 35.00', stock: '150 In Stock', out: false },
-    { name: 'Yema Bar', sku: 'FG-YBA-001', price: '₱ 35.00', stock: '150 In Stock', out: false },
-    { name: 'White Ube', sku: 'FG-WUB-001', price: '₱ 45.00', stock: '90 In Stock', out: false },
-    { name: 'Macapuno', sku: 'FG-MAC-001', price: '₱ 45.00', stock: '110 In Stock', out: false },
-    { name: 'Nidora Cheese', sku: 'FG-NCH-001', price: '₱ 55.00', stock: '60 In Stock', out: false },
-    { name: 'Rainbow Pastillas', sku: 'FG-RPA-001', price: '₱ 40.00', stock: '140 In Stock', out: false },
-    { name: 'Double Dutch', sku: 'FG-DDU-001', price: '₱ 60.00', stock: '75 In Stock', out: false },
-    { name: 'Pandan Cheese', sku: 'FG-PCH-001', price: '₱ 45.00', stock: '85 In Stock', out: false },
-    { name: 'Twix Roll', sku: 'FG-TRO-001', price: '₱ 50.00', stock: 'Out of Stock', out: true },
-    { name: 'Mega Pandan', sku: 'FG-MPA-001', price: '₱ 45.00', stock: '130 In Stock', out: false },
-    { name: 'Cheese Candy', sku: 'FG-CCA-001', price: '₱ 35.00', stock: '210 In Stock', out: false },
-    { name: 'Langka', sku: 'FG-LAN-001', price: '₱ 45.00', stock: '140 In Stock', out: false },
-    { name: 'Mega White', sku: 'FG-MWH-001', price: '₱ 45.00', stock: '100 In Stock', out: false }
+    { name: 'Galaxy Assorted (8)', sku: 'FG-UNK-008', price: '₱ 45.00', stock: '100 In Stock', out: false, image: 'assets/products/8.jpg' },
+    { name: 'Galaxy Assorted (12)', sku: 'FG-UNK-012', price: '₱ 45.00', stock: '100 In Stock', out: false, image: 'assets/products/12.jpg' },
+    { name: 'Galaxy Assorted (13)', sku: 'FG-UNK-013', price: '₱ 45.00', stock: '100 In Stock', out: false, image: 'assets/products/13.jpg' },
+    { name: 'Galaxy Assorted (19)', sku: 'FG-UNK-019', price: '₱ 45.00', stock: '100 In Stock', out: false, image: 'assets/products/19.jpg' },
+    { name: 'Assorted Bar', sku: 'FG-ASB-001', price: '₱ 50.00', stock: '120 In Stock', out: false, image: 'assets/products/Assorted Bar.jpg' },
+    { name: 'Buko Pandan Pastillas', sku: 'FG-BPP-001', price: '₱ 45.00', stock: '130 In Stock', out: false, image: 'assets/products/Buko Pandan Pastillas.jpg' },
+    { name: 'Double Dutch', sku: 'FG-DDU-001', price: '₱ 60.00', stock: '75 In Stock', out: false, image: 'assets/products/Double Dutch.jpg' },
+    { name: 'Jumbo Pandan', sku: 'FG-JPA-001', price: '₱ 40.00', stock: '150 In Stock', out: false, image: 'assets/products/Jumbo Pandan.jpg' },
+    { name: 'Jumbo Roll', sku: 'FG-JRO-001', price: '₱ 40.00', stock: '200 In Stock', out: false, image: 'assets/products/Jumbo Roll.jpg' },
+    { name: 'Jumbo White', sku: 'FG-JWH-001', price: '₱ 40.00', stock: '200 In Stock', out: false, image: 'assets/products/Jumbo White.jpg' },
+    { name: 'Langka', sku: 'FG-LAN-001', price: '₱ 45.00', stock: '140 In Stock', out: false, image: 'assets/products/Langka.jpg' },
+    { name: 'Macapuno', sku: 'FG-MAC-001', price: '₱ 45.00', stock: '110 In Stock', out: false, image: 'assets/products/Macapuno.jpg' },
+    { name: 'Mega Past', sku: 'FG-MPW-001', price: '₱ 45.00', stock: '85 In Stock', out: false, image: 'assets/products/Mega Past.jpg' },
+    { name: 'Mega Pastillas', sku: 'FG-MPA-002', price: '₱ 45.00', stock: '90 In Stock', out: false, image: 'assets/products/Mega Pastillas.jpg' },
+    { name: 'Mega White', sku: 'FG-MWH-001', price: '₱ 45.00', stock: '100 In Stock', out: false, image: 'assets/products/Mega White.jpg' },
+    { name: 'MilkyLicious Yema Filled', sku: 'FG-MYF-001', price: '₱ 150.00', stock: '40 In Stock', out: false, image: 'assets/products/MilkyLicious Yema Filled.jpg' },
+    { name: 'Nidora Pastillas', sku: 'FG-NPA-001', price: '₱ 55.00', stock: '60 In Stock', out: false, image: 'assets/products/Nidora Pastillas.jpg' },
+    { name: 'Pandan Cheese', sku: 'FG-PCH-001', price: '₱ 45.00', stock: '85 In Stock', out: false, image: 'assets/products/Pandan Cheese.jpg' },
+    { name: 'Pande Ube', sku: 'FG-PUB-001', price: '₱ 45.00', stock: '80 In Stock', out: false, image: 'assets/products/Pande Ube.jpg' },
+    { name: 'Pastillas Bar', sku: 'FG-PBA-001', price: '₱ 35.00', stock: '150 In Stock', out: false, image: 'assets/products/Pastillas Bar.jpg' },
+    { name: 'Strawberry Pastillas', sku: 'FG-SPA-001', price: '₱ 40.00', stock: '140 In Stock', out: false, image: 'assets/products/Strawberry Pastillas.jpg' },
+    { name: 'Sumo Ube Stick', sku: 'FG-SUS-001', price: '₱ 45.00', stock: '120 In Stock', out: false, image: 'assets/products/Sumo Ube Stick.jpg' },
+    { name: 'Sumo White Stick', sku: 'FG-SWS-001', price: '₱ 45.00', stock: '120 In Stock', out: false, image: 'assets/products/Sumo White Stick.jpg' },
+    { name: 'Twix Roll', sku: 'FG-TRO-001', price: '₱ 50.00', stock: 'Out of Stock', out: true, image: 'assets/products/Twix Roll.jpg' },
+    { name: 'Ube Bar', sku: 'FG-UBA-001', price: '₱ 35.00', stock: '150 In Stock', out: false, image: 'assets/products/Ube Bar.jpg' },
+    { name: 'Ube Roll', sku: 'FG-URO-001', price: '₱ 40.00', stock: '100 In Stock', out: false, image: 'assets/products/Ube Roll.jpg' },
+    { name: 'Ube TUBbies', sku: 'FG-UTU-001', price: '₱ 120.00', stock: '50 In Stock', out: false, image: 'assets/products/Ube TUBbies.jpg' },
+    { name: 'White Balls', sku: 'FG-WBA-001', price: '₱ 35.00', stock: '180 In Stock', out: false, image: 'assets/products/White Balls.jpg' },
+    { name: 'White TUBbies', sku: 'FG-WTU-001', price: '₱ 120.00', stock: '45 In Stock', out: false, image: 'assets/products/White TUBbies.jpg' }
   ];
 
   payments = [
@@ -551,7 +673,7 @@ export class SalesComponent {
 
   invoices = [
     { no: 'INV-2026-8902', cust: 'Sweet Shop Metro', order: 'ORD-2026-104', date: 'Today, 10:45 AM', amount: '₱ 2,800.00', status: 'GENERATED', chip: this.chipLime, selected: true },
-    { no: 'INV-2026-8901', cust: 'Supermart Downtown', order: 'ORD-2026-102', date: 'Yesterday', amount: '₱ 1,500.00', status: '✈️️ SENT', chip: this.chipCyan, selected: false },
-    { no: 'INV-2026-8900', cust: 'Local Grocers Inc.', order: 'ORD-2026-103', date: 'Sep 17, 2026', amount: '₱ 9,250.00', status: '✈️ SENT', chip: this.chipCyan, selected: false }
+    { no: 'INV-2026-8901', cust: 'Supermart Downtown', order: 'ORD-2026-102', date: 'Yesterday', amount: '₱ 1,500.00', status: '✈ SENT', chip: this.chipCyan, selected: false },
+    { no: 'INV-2026-8900', cust: 'Local Grocers Inc.', order: 'ORD-2026-103', date: 'Sep 17, 2026', amount: '₱ 9,250.00', status: '✈ SENT', chip: this.chipCyan, selected: false }
   ];
 }
