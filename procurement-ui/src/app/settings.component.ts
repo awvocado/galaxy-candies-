@@ -1,5 +1,6 @@
-import { Component, ChangeDetectionStrategy, signal, computed, ViewEncapsulation } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, ViewEncapsulation, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ApiService } from './api.service'; // Import your API service
 
 interface AuditEvent {
   time: string;
@@ -33,6 +34,11 @@ interface AuditEvent {
       }
       .candy-shadow { filter: drop-shadow(0 18px 16px rgba(0,0,0,.4)); }
 
+      .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 10px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(234,194,36,0.4); border-radius: 10px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(234,194,36,0.7); }
+
       @keyframes bob-a { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-14px) rotate(3deg); } }
       @keyframes bob-b { 0%,100% { transform: translateY(0) rotate(6deg); } 50% { transform: translateY(-10px) rotate(-4deg); } }
       @keyframes rocket-fly { 0%,100% { transform: translate(0,0) rotate(-2deg); } 50% { transform: translate(8px,-16px) rotate(2deg); } }
@@ -62,10 +68,6 @@ interface AuditEvent {
         <span class="a-twinkle d2 absolute bottom-[7%] left-[40%] w-1.5 h-1.5 rounded-full bg-[#EAC224]"></span>
 
         <div class="relative z-10 mb-8">
-          <div class="inline-flex items-center gap-2 bg-[#EAC224]/15 border border-[#EAC224]/40 px-4 py-1.5 rounded-full mb-4">
-            <span class="text-base">⚙️</span>
-            <span class="font-candy text-xs font-semibold text-[#EAC224] tracking-wider">Galaxy control room</span>
-          </div>
           <h2 class="font-candy text-4xl md:text-5xl font-semibold tracking-wide">Settings</h2>
         </div>
 
@@ -85,7 +87,6 @@ interface AuditEvent {
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                   <div>
                     <h3 class="font-candy text-2xl font-semibold mb-1">Audit trail</h3>
-                    <p class="text-sm text-white/55 font-sans">A chronological record of who did what, and when, across every module.</p>
                   </div>
                   <button (click)="exportCsv()" class="bg-white/10 border border-white/15 hover:bg-white/20 text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 font-candy">
                     📥 Export CSV
@@ -96,15 +97,18 @@ interface AuditEvent {
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 font-sans">
                   <div class="bg-white/10 p-5 rounded-2xl border border-white/15 border-b-4 border-b-white/40">
                     <span class="text-xs font-bold text-white/55 block mb-1">Events logged</span>
-                    <span class="text-2xl font-extrabold">{{ events.length }}</span>
+                    <!-- Updated to events() -->
+                    <span class="text-2xl font-extrabold">{{ events().length }}</span>
                   </div>
                   <div class="bg-[#EAC224]/10 p-5 rounded-2xl border border-[#EAC224]/25 border-b-4 border-b-[#EAC224]">
                     <span class="text-xs font-bold text-[#EAC224] block mb-1">Events today</span>
-                    <span class="text-2xl font-extrabold text-[#EAC224]">{{ todayCount }}</span>
+                    <!-- Updated to todayCount() -->
+                    <span class="text-2xl font-extrabold text-[#EAC224]">{{ todayCount() }}</span>
                   </div>
                   <div class="bg-[#9be15d]/10 p-5 rounded-2xl border border-[#9be15d]/25 border-b-4 border-b-[#9be15d]">
                     <span class="text-xs font-bold text-[#b7f27c] block mb-1">Active users</span>
-                    <span class="text-2xl font-extrabold text-[#9be15d]">{{ userCount }}</span>
+                    <!-- Updated to userCount() -->
+                    <span class="text-2xl font-extrabold text-[#9be15d]">{{ userCount() }}</span>
                   </div>
                 </div>
 
@@ -125,10 +129,10 @@ interface AuditEvent {
                   </div>
                 </div>
 
-                <!-- Table -->
-                <div class="overflow-x-auto bg-black/20 rounded-2xl border border-white/10">
+                <!-- Scrollable Table -->
+                <div class="overflow-y-auto max-h-[500px] bg-black/20 rounded-2xl border border-white/10 custom-scrollbar">
                   <table class="w-full text-left text-sm whitespace-nowrap border-collapse">
-                    <thead class="text-white/50 text-[13px] font-candy border-b border-white/10">
+                    <thead class="text-white/50 text-[13px] font-candy border-b border-white/10 sticky top-0 bg-[#1d2f0d] z-20 shadow-md">
                       <tr>
                         <th class="py-4 px-6 font-medium">Timestamp</th>
                         <th class="py-4 px-6 font-medium">User</th>
@@ -157,7 +161,7 @@ interface AuditEvent {
                   }
                 </div>
 
-                <p class="text-xs text-white/45 font-sans">Showing {{ filteredEvents().length }} of {{ events.length }} events. Entries are sample data for now.</p>
+                <p class="text-xs text-white/45 font-sans">Showing {{ filteredEvents().length }} of {{ events().length }} events.</p>
               </div>
             }
 
@@ -166,7 +170,6 @@ interface AuditEvent {
               <div class="space-y-6 max-w-3xl">
                 <div>
                   <h3 class="font-candy text-2xl font-semibold mb-1">Audit settings</h3>
-                  <p class="text-sm text-white/55 font-sans">Choose what the audit trail records and how long it is kept.</p>
                 </div>
 
                 <div class="bg-black/20 rounded-3xl border border-white/10 divide-y divide-white/10">
@@ -281,43 +284,75 @@ interface AuditEvent {
     </div>
   `
 })
-export class SettingsComponent {
+export class SettingsComponent implements OnInit {
+  private apiService = inject(ApiService);
+  
   activeTab = signal<'audit' | 'audit-settings'>('audit');
-
   activeCls = 'bg-[#EAC224] text-[#2d3e15] shadow-[0_8px_20px_-8px_rgba(234,194,36,0.7)]';
   idleCls = 'text-white/70 hover:bg-white/10 hover:text-white';
 
-  // ---- Audit trail ----
+  // ---- Audit trail state variables ----
   moduleFilter = signal<string>('all');
   search = signal<string>('');
   modules = ['all', 'Sales', 'QA', 'Production', 'Procurement', 'Warehouse', 'Logistics', 'System'];
 
-  // Sample entries. Replace with data from your backend.
-  events: AuditEvent[] = [
-    { time: '2026-09-19 11:00', user: 'System (Trigger 4)', module: 'Sales', action: 'ALLOCATE', record: 'ORD-2026-104', details: 'Reserved 50 packs of Mango Candy and generated a delivery request.' },
-    { time: '2026-09-19 10:45', user: 'Lorenz', module: 'Sales', action: 'CREATE', record: 'INV-2026-8902', details: 'Invoice generated for Sweet Shop Metro (₱ 2,800.00).' },
-    { time: '2026-09-19 09:30', user: 'System (Trigger 3)', module: 'QA', action: 'APPROVE', record: 'FG-RUN-402', details: 'Cleared 150 packs of Mango Candy to sellable stock.' },
-    { time: '2026-09-19 09:29', user: 'System (Trigger 3)', module: 'Production', action: 'UPDATE', record: 'FG-RUN-402', details: 'Deducted 150 packaging pouches from raw stock (BOM).' },
-    { time: '2026-09-19 08:05', user: 'Lorenz', module: 'Procurement', action: 'CREATE', record: 'PO-2026-010', details: 'Purchase order for 210 packaging pouches submitted for approval.' },
-    { time: '2026-09-18 15:00', user: 'System (Trigger 2)', module: 'QA', action: 'APPROVE', record: 'BAT-2609-02', details: 'Inbound QA passed for Refined Sugar (500 kg).' },
-    { time: '2026-09-18 14:30', user: 'Mike D.', module: 'Procurement', action: 'CREATE', record: 'GRN-2026-0150', details: 'Received Mango Puree (150 L) at Loading Dock A.' },
-    { time: '2026-09-18 13:10', user: 'Lorenz', module: 'QA', action: 'REJECT', record: 'BAT-2609-08', details: 'Quarantined Mango Candy Pouches: punctured seals on 45% of the lot.' },
-    { time: '2026-09-18 11:20', user: 'Mike D.', module: 'Logistics', action: 'UPDATE', record: 'DR-2026-088', details: 'Dispatched on Van 1 to Supermart Downtown.' },
-    { time: '2026-09-18 09:02', user: 'Lorenz', module: 'System', action: 'LOGIN', record: 'Session', details: 'Signed in from a trusted device.' },
-    { time: '2026-09-17 16:40', user: 'Lorenz', module: 'Warehouse', action: 'EXPORT', record: 'Stock ledger', details: 'Exported the stock movement audit log.' }
-  ];
+  events = signal<AuditEvent[]>([]);
 
-  todayCount = this.events.filter(e => e.time.startsWith('2026-09-19')).length;
-  userCount = new Set(this.events.map(e => e.user.startsWith('System') ? 'System' : e.user)).size;
+  // Computed signals that recalculate dynamically when 'events' updates
+  todayCount = computed(() => {
+    const now = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`; 
+    return this.events().filter(e => e.time.startsWith(todayStr)).length;
+  });
+
+  userCount = computed(() => {
+    const now = new Date().getTime();
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+    
+    const recentUsers = this.events()
+      .filter(e => {
+        const eventTime = new Date(e.time.replace(' ', 'T')).getTime();
+        return (now - eventTime) < twentyFourHours;
+      })
+      .map(e => e.user.startsWith('System') ? 'System' : e.user);
+      
+    return new Set(recentUsers).size;
+  });
 
   filteredEvents = computed(() => {
     const mod = this.moduleFilter();
     const q = this.search().trim().toLowerCase();
-    return this.events.filter(e =>
+    
+    return this.events().filter(e =>
       (mod === 'all' || e.module === mod) &&
       (!q || `${e.user} ${e.module} ${e.action} ${e.record} ${e.details}`.toLowerCase().includes(q))
     );
   });
+
+  ngOnInit() {
+    this.apiService.getAuditLogs().subscribe({
+      next: (data) => {
+        const mappedData = data.map(item => {
+          const safeTime = typeof item.timestamp === 'string' ? item.timestamp.replace(' ', 'T') : item.timestamp;
+          const d = new Date(safeTime);
+          const pad = (n: number) => n.toString().padStart(2, '0');
+          const timeString = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+          
+          return {
+            time: timeString,
+            user: item.user_name || 'System',
+            module: item.module_name,
+            action: item.action_type,
+            record: item.record_ref,
+            details: item.details
+          };
+        });
+        this.events.set(mappedData);
+      },
+      error: (err) => console.error('Failed to load audit logs from database', err)
+    });
+  }
 
   private chips: Record<string, string> = {
     CREATE: 'bg-[#9be15d]/15 text-[#b7f27c] border-[#9be15d]/30',
@@ -326,7 +361,8 @@ export class SettingsComponent {
     REJECT: 'bg-[#B4161B]/25 text-[#ffb4b7] border-[#B4161B]/50',
     ALLOCATE: 'bg-[#EAC224]/15 text-[#EAC224] border-[#EAC224]/35',
     LOGIN: 'bg-white/10 text-white/80 border-white/20',
-    EXPORT: 'bg-white/10 text-white/80 border-white/20'
+    EXPORT: 'bg-white/10 text-white/80 border-white/20',
+    LOGOUT: 'bg-[#B4161B]/25 text-[#ffb4b7] border-[#B4161B]/50'
   };
 
   chipFor(action: string): string {
@@ -368,7 +404,6 @@ export class SettingsComponent {
   }
 
   save(): void {
-    // Hook this up to your backend when it is ready.
     this.saved.set(true);
   }
 }
